@@ -93,26 +93,10 @@ retriever2_results = retriever2.transform(queries_df)
 if 'qid' in retriever2_results.columns and 'query_id' not in retriever2_results.columns:
     retriever2_results = retriever2_results.rename(columns={"qid": "query_id"})
 
-# Try to create a simple reranking approach using built-in PyTerrier features
-try:
-    # Create a query expansion pipeline using built-in PyTerrier query expansion
-    print("Creating Bo1 query expansion retriever...")
-    bm25_bo1 = bm25 >> pt.terrier.Bo1QueryExpansion(indexref) >> pt.terrier.Retriever(indexref, wmodel="BM25")
-    print("Retrieving results with BM25 + Bo1 query expansion...")
-    qe_results = bm25_bo1.transform(queries_df)
-    if 'qid' in qe_results.columns and 'query_id' not in qe_results.columns:
-        qe_results = qe_results.rename(columns={"qid": "query_id"})
-    # Use Bo1 query expansion results as the "semantic" results for fusion
-    bert_results = qe_results
-    second_retriever_name = "BM25+Bo1"
-except Exception as e:
-    print(f"Error creating Bo1 query expansion: {e}")
-    print("Using DirichletLM as the second retrieval model")
-    # Fall back to DirichletLM if query expansion fails
-    bert_results = retriever2_results
-    second_retriever_name = "DirichletLM"
+print("Using DirichletLM as the second retrieval model")
+bert_results = retriever2_results
+second_retriever_name = "DirichletLM"
 
-# Retrieve initial BM25 results.
 print("Retrieving BM25 results...")
 bm25_results = bm25.transform(queries_df)
 # Rename column for consistency.
@@ -188,11 +172,11 @@ fusion_results["TM2C2"] = tm2c2_fusion(bm25_results, bert_results)
 # 5. Evaluation of Fusion Results
 #######################################
 try:
-    # First attempt: Try to use ir_datasets which has many TREC collections with qrels
-    print("Attempting to load qrels with ir_datasets...")
+    # https://huggingface.co/BeIR
+    print("Attempting to load qrels with datasets...")
     try:
-        import ir_datasets
-        dataset = ir_datasets.load("beir/trec-covid")
+        import datasets
+        dataset = datasets.load("BeIR/trec-covid")
         # Convert qrels to the expected format
         qrels_data = [
             {"qid": str(qrel.query_id), "docno": str(qrel.doc_id), "relevance": qrel.relevance}
@@ -267,17 +251,14 @@ try:
             
             # Skip the rest of the evaluation
             raise Exception("No suitable qrels found - using overlap metrics instead")
-    
-    # If we have valid qrels, continue with the evaluation
-    # Define evaluation metrics with cutoff K=100.
-    # Use valid PyTerrier metric names
+
     metrics = ['ndcg_cut.100', 'recip_rank', 'map']
     
     print("\n===== EFFECTIVENESS EVALUATION =====")
     
     # Try different ways to access PyTerrier's evaluation functionality
     try:
-        # First attempt: use the correct pt.Evaluate class
+
         print("Attempting to use PyTerrier's evaluation...")
         
         # Make sure qrels_df has the right column names
@@ -293,9 +274,7 @@ try:
                     qrels_columns_map[column] = 'relevance'
             
             qrels_df = qrels_df.rename(columns=qrels_columns_map)
-        
-        # Create a single evaluator to use on all methods
-        evaluator = pt.Evaluate(qrels_df, metrics=metrics, perquery=False)
+        evaluator = pt.Evaluate(qrels=qrels_df, metrics=metrics, perquery=False)
             
         # Evaluate each fusion method
         eval_results = {}
@@ -405,23 +384,17 @@ except Exception as e:
     
     # Add efficiency comparison
     print("\n===== EFFICIENCY EVALUATION =====")
-    # Measure retrieval times for each method
-    time_results = {}
-    
-    # Measure BM25 retrieval time
-    start = time.time()
     _ = bm25.transform(queries_df)
-    time_results["BM25"] = time.time() - start
     
     # Measure second retriever time (BERT or DirichletLM)
     if has_bert:
         start = time.time()
         _ = bert_pipeline.transform(queries_df)
-        time_results["BERT Reranker"] = time.time() - start
+
     else:
         start = time.time()
-        _ = dph.transform(queries_df)
-        time_results["DirichletLM"] = time.time() - start
+        _ = retriever2.transform(queries_df)
+
     
     # Measure fusion times
     for fusion_name, fusion_func in [
@@ -432,14 +405,7 @@ except Exception as e:
     ]:
         start = time.time()
         _ = fusion_func(bm25_results, bert_results)
-        time_results[fusion_name] = time.time() - start
-    
-    # Display timing results
-    time_df = pd.DataFrame({
-        "Method": list(time_results.keys()),
-        "Time (seconds)": list(time_results.values())
-    })
-    print(time_df.sort_values("Time (seconds)"))
+
     
     # Calculate and display result set sizes
     print("\n===== RESULT SET SIZES =====")
