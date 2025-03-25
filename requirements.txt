@@ -1,0 +1,10 @@
+pyterrier
+datasets
+pandas
+numpy
+scipy
+pyterrier_colbert
+ir_datasets
+pytrec_eval
+torch>=1.9.0
+transformers>=4.10.0
