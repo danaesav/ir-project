@@ -4,7 +4,9 @@ This project implements a framework for combining traditional retrieval methods 
 
 ## Setup
 
-1. Install the required packages:
+1. Activate conda environment or create a python3 virtual env then activate it.
+
+2. Install the required packages:
    ```
    pip install -r requirements.txt
    ```
