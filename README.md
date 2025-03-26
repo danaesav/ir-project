@@ -20,7 +20,7 @@ This project implements a framework for combining traditional retrieval methods 
 
 - **Retrieval Methods**:
   - BM25: Traditional lexical retrieval
-  - BERT: Dense neural retrieval
+  - TAS-B: Dense neural retrieval
   
 - **Fusion Methods**:
   - Linear Fusion (with various α values)
@@ -29,9 +29,9 @@ This project implements a framework for combining traditional retrieval methods 
   - TM2C2
 
 - **Evaluation**:
-  - MAP@100 (primary metric)
-  - NDCG@100
-  - MRR
+  - MAP@100
+  - NDCG@10
+  - MRR@10
 
 ## Results
 
