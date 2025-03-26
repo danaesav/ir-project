@@ -17,6 +17,9 @@ from fast_forward.util import Indexer
 from fusions.FFTM2C2 import FFTM2C2
 from fast_forward.util.pyterrier import FFScore
 
+
+# Implement fusion functions reference: 
+# https://github.com/mrjleo/fast-forward-indexes/blob/main/src/fast_forward/util/pyterrier.py
 class FFRRF(pt.Transformer):
     """
     Fusion function implementing Reciprocal Rank Fusion (RRF):
@@ -65,8 +68,9 @@ class FFSRRF(pt.Transformer):
         new_df['score'] = 1 / (self.k + sr_bm25) + 1 / (self.k + sr_neural)
         return pt.model.add_ranks(new_df, single_query=False)
 
-# https://pyterrier.readthedocs.io/en/latest/datasets.html
+# choose datasets: https://pyterrier.readthedocs.io/en/latest/datasets.html
 dataset_name = "irds:beir/fiqa"
+
 safe_dataset_name = dataset_name.replace(":", "_").replace("/", "_")
 dataset = pt.get_dataset(dataset_name)
 testset = pt.get_dataset(dataset_name + "/test")
@@ -78,24 +82,24 @@ indexer = pt.IterDictIndexer(
 index_ref = indexer.index(dataset.get_corpus_iter(), fields=["text"])
 bm25 = pt.terrier.Retriever(index_ref, wmodel="BM25")
 
+# To change the encoder, consult:
+# https://github.com/mrjleo/fast-forward-indexes/blob/main/src/fast_forward/encoder/transformer.py
 q_encoder = d_encoder = TASBEncoder(
     device="cuda:0" if torch.cuda.is_available() else "cpu"
 )
 ff_index = None
-# Properly construct the path using Path objects
 ff_index_path = Path.cwd() / "indexes" / f"ffindex_{safe_dataset_name}_tasb.h5"
 
 
 # Create parent directory if it doesn't exist.
 try: 
     ff_index = OnDiskIndex.load(
-        Path.cwd() / "indexes" / f"ffindex_{safe_dataset_name}_tasb.h5",
+        ff_index_path,
         query_encoder=q_encoder,
         mode=Mode.MAXP,
     )
 except FileNotFoundError:
     ff_index_path.parent.mkdir(exist_ok=True, parents=True)
-    # Attempt to create the OnDiskIndex.
     ff_index = OnDiskIndex(
         ff_index_path,
         query_encoder=q_encoder,
@@ -131,6 +135,8 @@ result = pt.Experiment(
     testset.get_qrels(),
     eval_metrics=[RR @ 10, nDCG @ 10, MAP @ 100],
     names=["BM25", "linear(alpha = 0.5)", "TM2C2"],
+    baseline=0,
+    correction="bonferroni"
 )
 
 print(result)
