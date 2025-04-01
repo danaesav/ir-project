@@ -6,7 +6,7 @@ import torch
 import numpy as np
 import pyterrier as pt
 from pathlib import Path
-from pyterrier.measures import RR, nDCG, MAP
+from pyterrier.measures import *
 from fast_forward.encoder import TASBEncoder
 import torch
 from fast_forward.index import OnDiskIndex, Mode
