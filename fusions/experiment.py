@@ -49,6 +49,8 @@ def normalize(arr: np.ndarray, method: str, theoretical_min: int = None) -> np.n
         if theoretical_min is None:
             raise ValueError("theoretical_min must be provided for theoretical_min_max normalization")
         return theoretical_min_max_normalization(arr, theoretical_min)
+    elif method == "unnormalized":
+        return arr
     else:
         raise ValueError("Invalid normalization method")
 
@@ -57,7 +59,7 @@ def fuse_convex_norm(df1, df2, df3, w1, w2, w3,
                      normalization_method_1,
                      normalization_method_2,
                      normalization_method_3,
-                     theoretical_min=None):
+                     theoretical_min=-1):
 
     # ================== PRECONDITION CHECKS ==========================
     convex_precondition(w1, w2, w3)
