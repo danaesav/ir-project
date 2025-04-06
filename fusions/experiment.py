@@ -86,7 +86,7 @@ def fuse_convex_norm(df1, df2, df3, w1, w2, w3,
     merged_df = merged_df.rename(columns={'score': 'score_3'})
     merged_df['query'] = merged_df['query_1']
 
-    scores1 = normalize(merged_df['score_1'].values.astype(np.float32), normalization_method_1, theoretical_min)
+    scores1 = normalize(merged_df['score_1'].values.astype(np.float32), normalization_method_1, 0)
     scores2 = normalize(merged_df['score_2'].values.astype(np.float32), normalization_method_2, theoretical_min)
     scores3 = normalize(merged_df['score_3'].values.astype(np.float32), normalization_method_3, theoretical_min)
 
