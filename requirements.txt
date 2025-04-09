@@ -1,0 +1,9 @@
+python-terrier==0.12.1
+fast-forward-indexes==0.7.0
+pandas
+numpy
+scipy
+ir_datasets
+pytrec_eval
+torch
+transformers
